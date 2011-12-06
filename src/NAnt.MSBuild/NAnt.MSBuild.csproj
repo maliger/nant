@@ -65,7 +65,12 @@
     </Compile>
     <Compile Include="BuildEngine\BuildItem.cs" />
     <Compile Include="BuildEngine\BuildItemGroup.cs" />
-    <Compile Include="BuildEngine\BuildPropertyGroup.cs" />
+    <Compile Include="BuildEngine\BuildItem3.cs" />
+    <Compile Include="BuildEngine\BuildItem4.cs" />
+    <Compile Include="BuildEngine\BuildItemGroup3.cs" />
+    <Compile Include="BuildEngine\BuildItemGroup4.cs" />
+    <Compile Include="BuildEngine\Project4.cs" />
+    <Compile Include="BuildEngine\Project3.cs" />
     <Compile Include="BuildEngine\Engine.cs" />
     <Compile Include="BuildEngine\Project.cs" />
     <Compile Include="MSBuildAssemblyReference.cs" />

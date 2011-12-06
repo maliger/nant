@@ -22,6 +22,7 @@ using System.Collections;
 using System.Text;
 using System.Reflection;
 using System.IO;
+using System.Xml;
 
 namespace NAnt.MSBuild.BuildEngine {
     internal class Engine : MarshalByRefObject {
@@ -73,21 +74,30 @@ namespace NAnt.MSBuild.BuildEngine {
 
             public void DoLoad() {
                 engine = new Engine();
-                string pth = Path.Combine(framework.FrameworkDirectory.FullName, "Microsoft.Build.Engine.dll");
+
+                string assemblyName = "Microsoft.Build.Engine";
+                string typeName = "Microsoft.Build.BuildEngine.Engine";
+
+                if (framework.Version.Major >= 4) {
+                    assemblyName = "Microsoft.Build";
+                    typeName = "Microsoft.Build.Evaluation.ProjectCollection";
+                }                
+
+                string pth = Path.Combine(framework.FrameworkDirectory.FullName, assemblyName + ".dll");
                 if (File.Exists(pth)) {
                     engine._a = Assembly.LoadFile(pth);
                 } else {
                     //frameworks 3.0 and 3.5 do not copy its assemblies into filesystem. They reside just in assembly cache (GAC)
 
                     //Microsoft.Build.Engine, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a
-                    AssemblyName an = new AssemblyName("Microsoft.Build.Engine");
+                    AssemblyName an = new AssemblyName(assemblyName);
                     an.Version = new Version(framework.Version.Major, framework.Version.Minor, 0, 0);
                     an.CultureInfo = System.Globalization.CultureInfo.InvariantCulture;
                     an.SetPublicKeyToken(new byte[] { 0xb0, 0x3f, 0x5f, 0x7f, 0x11, 0xd5, 0x0a, 0x3a });
 
                     engine._a = Assembly.Load(an); //load from GAC
                 }
-                engine._t = engine._a.GetType("Microsoft.Build.BuildEngine.Engine");
+                engine._t = engine._a.GetType(typeName);
                 engine._obj = Activator.CreateInstance(engine._t);
 
                 //2.0
@@ -111,12 +121,34 @@ namespace NAnt.MSBuild.BuildEngine {
             get { return _obj; }
         }
 
+        internal Type Type {
+            get { return _t; }
+        }
+
         public void UnregisterAllLoggers() {
             _t.GetMethod("UnregisterAllLoggers").Invoke(_obj, null);
         }
 
         public void RegisterLogger(/*ILogger*/object logger) {
             _t.GetMethod("RegisterLogger").Invoke(_obj, new object[] {logger});
+        }
+
+        public Project LoadProject(string projectPath, System.Xml.XmlElement xmlDefinition, Version version) {
+            //4.0
+            if (_a.GetName().Version.Major >= 4)
+            {
+                NAnt.MSBuild.BuildEngine.Project4 proj4 = new NAnt.MSBuild.BuildEngine.Project4(this, xmlDefinition, version);
+                proj4.FullFileName = projectPath;
+                return proj4;
+            }
+
+            NAnt.MSBuild.BuildEngine.Project3 proj3 = new NAnt.MSBuild.BuildEngine.Project3(this);
+            proj3.FullFileName = projectPath;
+            proj3.LoadXml(xmlDefinition.OuterXml);
+
+            //set tools version to the msbuild version we got loaded
+            proj3.SetToolsVersion(version.ToString());
+            return proj3;
         }
     }
 }

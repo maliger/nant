@@ -24,44 +24,11 @@ using System.Reflection;
 using System.IO;
 
 namespace NAnt.MSBuild.BuildEngine {
-    internal class BuildItemGroup {
+    internal abstract class BuildItemGroup {
         
-        #region Enumerator
-        private class BuildItemEnumerator : IEnumerator {
-            IEnumerator _po;
+        protected BuildItemGroup() {}
 
-            internal BuildItemEnumerator(IEnumerator po) {
-                _po = po;
-            }
-
-            public object Current {
-                get { return new BuildItem(_po.Current); }
-            }
-
-            public bool MoveNext() {
-                return _po.MoveNext();
-            }
-
-            public void Reset() {
-                _po.Reset();
-            }
-        }
-        #endregion
-
-        object _obj;
-        Type _t;
-
-        internal BuildItemGroup(object o) {
-            _obj = o;
-            _t = _obj.GetType();
-        }
-
-        public System.Collections.IEnumerator GetEnumerator() {
-            return new BuildItemEnumerator((IEnumerator)_t.GetMethod("GetEnumerator").Invoke(_obj, null));
-        }
-
-        public BuildItem AddNewItem(string itemName, string itemInclude) {
-            return new BuildItem(_t.GetMethod("AddNewItem", new Type[] { typeof(string), typeof(string) }).Invoke(_obj, new object[] { itemName, itemInclude }));
-        }
+        public abstract System.Collections.IEnumerator GetEnumerator();
+        public abstract BuildItem AddNewItem(string itemName, string itemInclude);
     }
 }

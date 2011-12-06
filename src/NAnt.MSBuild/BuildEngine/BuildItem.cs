@@ -24,25 +24,12 @@ using System.Reflection;
 using System.IO;
 
 namespace NAnt.MSBuild.BuildEngine {
-    internal class BuildItem {
-        object _obj;
-        Type _t;
+    internal abstract class BuildItem {
 
-        internal BuildItem(object o) {
-            _obj = o;
-            _t = _obj.GetType();
-        }
+        protected BuildItem() {}
 
-        public string FinalItemSpec {
-            get { return (string)_t.GetProperty("FinalItemSpec").GetValue(_obj, null); }
-        }
-
-        public string GetMetadata(string metadataName) {
-            return (string)_t.GetMethod("GetMetadata").Invoke(_obj, new object[] { metadataName });
-        }
-
-        public void SetMetadata(string metadataName, string metadataValue) {
-            _t.GetMethod("SetMetadata", new Type[] { typeof(string), typeof(string) }).Invoke(_obj, new object[] { metadataName, metadataValue });
-        }
+        public abstract string FinalItemSpec { get; }
+        public abstract string GetMetadata(string metadataName);
+        public abstract void SetMetadata(string metadataName, string metadataValue);
     }
 }

@@ -47,10 +47,10 @@ namespace NAnt.MSBuild {
 
             //explicit set. EvaluatedProperties will use those.
             //Its caller responsibility to set it back to original values, if needed
-            msproj.GlobalProperties.SetProperty("Configuration", _name);
+            msproj.SetGlobalProperty("Configuration", _name);
 
             if (!String.IsNullOrEmpty(_platform)) {
-                msproj.GlobalProperties.SetProperty("Platform", _platform.Replace(" ", string.Empty));
+                msproj.SetGlobalProperty("Platform", _platform.Replace(" ", string.Empty));
             }
 
             _relativeOutputDir = msproj.GetEvaluatedProperty("OutputPath");

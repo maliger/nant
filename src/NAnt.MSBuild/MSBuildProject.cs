@@ -79,18 +79,17 @@ namespace NAnt.MSBuild {
             string platform = solutionTask.Platform;
 
             _msbuild = MSBuildEngine.CreateMSEngine(solutionTask);
-            _msproj = new NAnt.MSBuild.BuildEngine.Project(_msbuild);
-            _msproj.FullFileName = projectPath;
-            _msproj.LoadXml(xmlDefinition.OuterXml);
+            _msproj = _msbuild.LoadProject(projectPath, xmlDefinition, SolutionTask.Project.TargetFramework.Version);
 
-            _msproj.GlobalProperties.SetProperty("Configuration", cfgname);
+            _msproj.SetGlobalProperty("Configuration", cfgname);
 
             if (platform.Length > 0) {
-                _msproj.GlobalProperties.SetProperty("Platform", platform.Replace(" ", string.Empty));
+                _msproj.SetGlobalProperty("Platform", platform.Replace(" ", string.Empty));
             }
 
             if (outputDir != null) {
-                _msproj.GlobalProperties.SetProperty("OutputPath", outputDir.FullName);
+                _msproj.SetGlobalProperty("OutputPath", outputDir.FullName);
+                _msproj.SetGlobalProperty("OutDir", outputDir.FullName + Path.DirectorySeparatorChar); //vsxproj uses this one
             }
 
             bool generateDoc = false;
@@ -110,23 +109,19 @@ namespace NAnt.MSBuild {
                         generateDoc = Boolean.Parse(val);
                         break;
                     default:
-                        _msproj.GlobalProperties.SetProperty(property.PropertyName, val);
+                        _msproj.SetGlobalProperty(property.PropertyName, val);
                         break;
                 }
 
             }
 
-
-            //set tools version to the msbuild version we got loaded
-            _msproj.ToolsVersion = SolutionTask.Project.TargetFramework.Version.ToString();
-
             //TODO: honoring project's TargetFrameworkVersion is not working atm. System assemblies are resolved badly
-            _msproj.GlobalProperties.SetProperty("TargetFrameworkVersion", "v" + SolutionTask.Project.TargetFramework.Version.ToString());
+            _msproj.SetGlobalProperty("TargetFrameworkVersion", "v" + SolutionTask.Project.TargetFramework.Version.ToString());
 
             //evaluating
             _guid = _msproj.GetEvaluatedProperty("ProjectGuid");
             _projectDirectory = new DirectoryInfo(_msproj.GetEvaluatedProperty("ProjectDir"));
-            _projectPath = _msproj.GetEvaluatedProperty("ProjectPath");
+            _projectPath = projectPath; //TODO: test, whethere its same under msbuild3 (do not work under msbuild4) _msproj.GetEvaluatedProperty("ProjectPath");
 
             //TODO: honoring project's TargetFrameworkVersion is not working atm. System assemblies are resolved badly
             ////check if we targeting something else and throw a warning
@@ -194,7 +189,7 @@ namespace NAnt.MSBuild {
                 // add built documentation file as extra output file
                 ExtraOutputFiles[xmlDocBuildFile] = Path.GetFileName(xmlDocBuildFile);
 
-                _msproj.GlobalProperties.SetProperty("DocumentationFile", xmlDocBuildFile);
+                _msproj.SetGlobalProperty("DocumentationFile", xmlDocBuildFile);
             }
         }
 
@@ -371,10 +366,10 @@ namespace NAnt.MSBuild {
         protected override BuildResult Build(Configuration solutionConfiguration) {
             // explicitly set the Configuration and Platform
             MSBuildConfiguration projectConfig = (MSBuildConfiguration) BuildConfigurations[solutionConfiguration];
-            _msproj.GlobalProperties.SetProperty("Configuration", projectConfig.Name);
+            _msproj.SetGlobalProperty("Configuration", projectConfig.Name);
 
             if (!String.IsNullOrEmpty(projectConfig.PlatformName)) {
-                _msproj.GlobalProperties.SetProperty("PlatformTarget", projectConfig.PlatformName.Replace(" ", string.Empty));
+                _msproj.SetGlobalProperty("PlatformTarget", projectConfig.PlatformName.Replace(" ", string.Empty));
             }
             
             //modify original references to contain full path to whatever we resolved
@@ -399,9 +394,9 @@ namespace NAnt.MSBuild {
             //this should disable assembly resolution and always use hintpath (which we supply)
             if(_msbuild.Assembly.GetName().Version.Major >= 4) {
                 //MSBuild 4 adds some system references automatically, so adding TargetFrameworkDirectory for those
-                _msproj.GlobalProperties.SetProperty("AssemblySearchPaths", "{HintPathFromItem};{TargetFrameworkDirectory}");
+                _msproj.SetGlobalProperty("AssemblySearchPaths", "{HintPathFromItem};{TargetFrameworkDirectory}");
             } else {
-                _msproj.GlobalProperties.SetProperty("AssemblySearchPaths", "{HintPathFromItem}");
+                _msproj.SetGlobalProperty("AssemblySearchPaths", "{HintPathFromItem}");
             }
 
             if(_msproj.Build()) {

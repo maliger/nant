@@ -1,4 +1,4 @@
-// NAnt - A .NET build tool
+﻿// NAnt - A .NET build tool
 // Copyright (C) 2001-2011 Gerry Shaw
 //
 // This program is free software; you can redistribute it and/or modify
@@ -24,20 +24,25 @@ using System.Reflection;
 using System.IO;
 
 namespace NAnt.MSBuild.BuildEngine {
-    internal abstract class Project {
+    internal class BuildItem3 : BuildItem {
+        object _obj;
+        Type _t;
 
-        protected Project() {}
+        internal BuildItem3(object o) {
+            _obj = o;
+            _t = _obj.GetType();
+        }
 
-        public abstract string FullFileName { get; set; }
-        public abstract string ToolsVersion { get; }
+        public override string FinalItemSpec {
+            get { return (string)_t.GetProperty("FinalItemSpec").GetValue(_obj, null); }
+        }
 
-        public abstract void SetGlobalProperty(string propertyName, string propertyValue);
-        public abstract string GetEvaluatedProperty(string propertyName);
+        public override string GetMetadata(string metadataName) {
+            return (string)_t.GetMethod("GetMetadata").Invoke(_obj, new object[] { metadataName });
+        }
 
-        public abstract BuildItemGroup GetEvaluatedItemsByName(string itemName);
-        public abstract void RemoveItemsByName(string itemName);
-        public abstract BuildItemGroup AddNewItemGroup();
-
-        public abstract bool Build();
+        public override void SetMetadata(string metadataName, string metadataValue) {
+            _t.GetMethod("SetMetadata", new Type[] { typeof(string), typeof(string) }).Invoke(_obj, new object[] { metadataName, metadataValue });
+        }
     }
 }
