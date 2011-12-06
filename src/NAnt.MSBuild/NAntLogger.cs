@@ -59,25 +59,28 @@ namespace NAnt.MSBuild {
     /// Logger classed used for MSBuild tasks in NAnt.
     /// </summary>
     public class NAntLogger {
-    
+
+        private static Type _loggerType;
         internal static NAntLogger Create(NAnt.Core.FrameworkInfo framework, Task task, NAntLoggerVerbosity verbosity, NAnt.MSBuild.BuildEngine.Engine engine) {
-            CodeDomProvider codeDomProvider = CodeDomProvider.CreateProvider("C#");
-            CompilerParameters par = new CompilerParameters();
-            AssemblyName msbuildFrameworkName = engine.Assembly.GetName();
-            msbuildFrameworkName.Name = "Microsoft.Build.Framework";
-            Assembly msbuildFramework = Assembly.Load(msbuildFrameworkName);
+            if (_loggerType == null) {
+                CodeDomProvider codeDomProvider = CodeDomProvider.CreateProvider("C#");
+                CompilerParameters par = new CompilerParameters();
+                AssemblyName msbuildFrameworkName = engine.Assembly.GetName();
+                msbuildFrameworkName.Name = "Microsoft.Build.Framework";
+                Assembly msbuildFramework = Assembly.Load(msbuildFrameworkName);
 
-            par.ReferencedAssemblies.Add(msbuildFramework.Location);
-            par.ReferencedAssemblies.Add(typeof(NAnt.Core.Task).Assembly.Location);
-            par.ReferencedAssemblies.Add(typeof(NAntLogger).Assembly.Location);
-            par.GenerateInMemory = true;
-            CompilerResults res = codeDomProvider.CompileAssemblyFromSource(par, _impl);
-            if (res.Errors.HasErrors) {
-                return null;
+                par.ReferencedAssemblies.Add(msbuildFramework.Location);
+                par.ReferencedAssemblies.Add(typeof(NAnt.Core.Task).Assembly.Location);
+                par.ReferencedAssemblies.Add(typeof(NAntLogger).Assembly.Location);
+                par.GenerateInMemory = true;
+                CompilerResults res = codeDomProvider.CompileAssemblyFromSource(par, _impl);
+                if (res.Errors.HasErrors) {
+                    return null;
+                }
+
+                _loggerType = res.CompiledAssembly.GetType("NAntLoggerImpl");
             }
-
-            Type t = res.CompiledAssembly.GetType("NAntLoggerImpl");
-            return (NAntLogger)Activator.CreateInstance(t, task, verbosity);
+            return (NAntLogger)Activator.CreateInstance(_loggerType, task, verbosity);
         }
 
         private const string _impl = @"

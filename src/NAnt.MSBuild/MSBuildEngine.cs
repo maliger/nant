@@ -29,19 +29,22 @@ namespace NAnt.MSBuild {
         private static NAnt.MSBuild.BuildEngine.Engine _msbuild;
 
         public static NAnt.MSBuild.BuildEngine.Engine CreateMSEngine(NAnt.VSNet.Tasks.SolutionTask solutionTask) {
-            if (_msbuild!=null) {
-                return _msbuild;
+            if (_msbuild == null) {
+
+                try {
+                    _msbuild = NAnt.MSBuild.BuildEngine.Engine.LoadEngine(solutionTask.Project.TargetFramework);
+                }
+                catch (Exception e) {
+                    throw new BuildException(
+                        String.Format(
+                            "MSBuild v{0} can't be found. It is needed for building MSBuild projects. VS2005 and later is using MSBuild projects for C# and VB",
+                            solutionTask.Project.TargetFramework.Version),
+                        Location.UnknownLocation, e);
+                }
+                solutionTask.Log(Level.Verbose, "Using MSBuild version {0}.", FileVersionInfo.GetVersionInfo(_msbuild.Assembly.Location).ProductVersion);
             }
 
-            try {
-                _msbuild = NAnt.MSBuild.BuildEngine.Engine.LoadEngine(solutionTask.Project.TargetFramework);
-            } catch (Exception e) {
-                throw new BuildException(
-                    String.Format(
-                        "MSBuild v{0} can't be found. It is needed for building MSBuild projects. VS2005 and later is using MSBuild projects for C# and VB",
-                        solutionTask.Project.TargetFramework.Version),
-                    Location.UnknownLocation, e);
-            }
+            //create new logger for every engine created (new solution task)
             _msbuild.UnregisterAllLoggers();
 
             NAntLoggerVerbosity _verbosity = solutionTask.Verbose ? NAntLoggerVerbosity.Normal : NAntLoggerVerbosity.Minimal;
@@ -50,8 +53,6 @@ namespace NAnt.MSBuild {
                 _msbuild.RegisterLogger(_logger);
             }
             
-            solutionTask.Log(Level.Verbose, "Using MSBuild version {0}.", FileVersionInfo.GetVersionInfo(_msbuild.Assembly.Location).ProductVersion);
-
             return _msbuild;
         }
 
