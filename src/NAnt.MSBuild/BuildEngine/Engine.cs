@@ -26,9 +26,13 @@ using System.Xml;
 
 namespace NAnt.MSBuild.BuildEngine {
     internal class Engine : MarshalByRefObject {
+
+        private enum Kind { msbuild3, msbuild4 };
+
         object _obj;
         Type _t; 
         Assembly _a;
+        Kind _kind;
 
         private Engine() {
         }
@@ -75,17 +79,21 @@ namespace NAnt.MSBuild.BuildEngine {
             public void DoLoad() {
                 engine = new Engine();
 
-                string assemblyName = "Microsoft.Build.Engine";
-                string typeName = "Microsoft.Build.BuildEngine.Engine";
-
+                string assemblyName;
+                string typeName;
                 if (framework.Version.Major >= 4) {
                     assemblyName = "Microsoft.Build";
                     typeName = "Microsoft.Build.Evaluation.ProjectCollection";
-                }                
+                    engine._kind = Kind.msbuild4;
+                } else {
+                    assemblyName = "Microsoft.Build.Engine";
+                    typeName = "Microsoft.Build.BuildEngine.Engine";
+                    engine._kind = Kind.msbuild3;
+                }
 
                 string pth = Path.Combine(framework.FrameworkDirectory.FullName, assemblyName + ".dll");
                 if (File.Exists(pth)) {
-                    engine._a = Assembly.LoadFile(pth);
+                    engine._a = Assembly.LoadFile(pth); //it can load from GAC, can be even another framework's msbuid. is it ok? use LoadFrom context?
                 } else {
                     //frameworks 3.0 and 3.5 do not copy its assemblies into filesystem. They reside just in assembly cache (GAC)
 
@@ -125,6 +133,10 @@ namespace NAnt.MSBuild.BuildEngine {
             get { return _t; }
         }
 
+        internal string EngineKind {
+            get { return _kind.ToString(); }
+        }
+
         public void UnregisterAllLoggers() {
             _t.GetMethod("UnregisterAllLoggers").Invoke(_obj, null);
         }
@@ -135,7 +147,7 @@ namespace NAnt.MSBuild.BuildEngine {
 
         public Project LoadProject(string projectPath, System.Xml.XmlElement xmlDefinition, Version version) {
             //4.0
-            if (_a.GetName().Version.Major >= 4)
+            if (_kind == Kind.msbuild4)
             {
                 NAnt.MSBuild.BuildEngine.Project4 proj4 = new NAnt.MSBuild.BuildEngine.Project4(this, xmlDefinition, version);
                 proj4.FullFileName = projectPath;

@@ -41,7 +41,7 @@ namespace NAnt.MSBuild {
                             solutionTask.Project.TargetFramework.Version),
                         Location.UnknownLocation, e);
                 }
-                solutionTask.Log(Level.Verbose, "Using MSBuild version {0}.", FileVersionInfo.GetVersionInfo(_msbuild.Assembly.Location).ProductVersion);
+                solutionTask.Log(Level.Verbose, "Using MSBuild version {0} ({1}).", FileVersionInfo.GetVersionInfo(_msbuild.Assembly.Location).ProductVersion, _msbuild.EngineKind);
             }
 
             //create new logger for every engine created (new solution task)

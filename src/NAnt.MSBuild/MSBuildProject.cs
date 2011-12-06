@@ -392,7 +392,7 @@ namespace NAnt.MSBuild {
             }
 
             //this should disable assembly resolution and always use hintpath (which we supply)
-            if(_msbuild.Assembly.GetName().Version.Major >= 4) {
+            if (SolutionTask.Project.TargetFramework.Version.Major >= 4) {
                 //MSBuild 4 adds some system references automatically, so adding TargetFrameworkDirectory for those
                 _msproj.SetGlobalProperty("AssemblySearchPaths", "{HintPathFromItem};{TargetFrameworkDirectory}");
             } else {
