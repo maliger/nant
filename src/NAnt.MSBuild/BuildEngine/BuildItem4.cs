@@ -42,7 +42,7 @@ namespace NAnt.MSBuild.BuildEngine {
         }
 
         public override string GetMetadata(string metadataName) {
-            return (string)_t.GetMethod("GetMetadata").Invoke(_obj, new object[] { metadataName });
+            return (string)_t.GetMethod("GetMetadataValue").Invoke(_obj, new object[] { metadataName });
         }
 
         public override void SetMetadata(string metadataName, string metadataValue) {
